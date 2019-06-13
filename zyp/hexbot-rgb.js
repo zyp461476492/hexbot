@@ -12,10 +12,15 @@ let startY = 0;
 let speed = 2000;
 let ticket;
 let rgb = ['R', 'G', 'B'];
+let currentColor;
+let status = '';
 
 
 function start_app() {
     sizeCanvas();
+
+    // default is running
+    status = 'running';
 
     NOOPBOT_FETCH({
         API: 'hexbot',
@@ -49,14 +54,21 @@ function settingColorArray(responseJson) {
     });
     // start draw rgb 
     ticket = NOOPBOT_TICK_SETUP(draw, speed);
+    // setting status
+    status = 'running';
 }
 
 function draw() {
     // 清空画布
     sizeCanvas();
     startX = 300;
-    let rgbArray = hexToRgb(NOOPBOT_DECIDE(colorArray));
+    // save currentColor
+    currentColor = NOOPBOT_DECIDE(colorArray);
+    let rgbArray = hexToRgb(currentColor);
+    // draw rgb
     drawRgb(rgbArray);
+    // draw color
+    drawColorRect();
 }
 
 
@@ -64,6 +76,20 @@ function drawRgb(rgbArray) {
     rgbArray.forEach(function (item, index) {
         drawNumber(item, index);
     });
+}
+
+/**
+ * draw current color by rect
+ */
+function drawColorRect() {
+    let x = window.innerWidth / 2 - 25;
+    let y = window.innerHeight / 2 + 100;
+    drawText('current Color', x - 24, y - 20, '24px');
+    ctx.beginPath();
+    ctx.fillStyle = currentColor;
+    ctx.fillRect(x, y, 50, 50);
+    ctx.closePath();
+    ctx.fill();
 }
 
 /**
@@ -85,7 +111,7 @@ function hexToRgb(hexCode) {
 
 function drawNumber(number, index) {
     let digitArray = getDigitArray(number);
-    drawText(rgb[index], startX + 48, startY - 40);
+    drawText(rgb[index], startX + 48, startY - 40, '64px');
     digitArray.forEach(function (item, index) {
         drawDigit(item, startX, startY);
         startX += 48;
@@ -106,13 +132,8 @@ function drawDigit(index, startX, startY) {
             x = startX + j * 5;
             y = startY + i * 5;
             if (array[i][j] === 1) {
-                let grd = ctx.createRadialGradient(x, y, 2, x, y, 4);
-                grd.addColorStop(0, '#ffffff');
-                grd.addColorStop(1, NOOPBOT_DECIDE(colorArray));
-                ctx.fillStyle = grd;
-                ctx.fillStyle = NOOPBOT_DECIDE(colorArray);
                 ctx.beginPath();
-                // ctx.arc(x, y, 4, 0, Math.PI * 2, true);
+                ctx.fillStyle = NOOPBOT_DECIDE(colorArray);
                 ctx.fillRect(x, y, 4, 4);
                 ctx.closePath();
                 ctx.fill();
@@ -190,8 +211,58 @@ function charToNumber(ch) {
  * draw text by canvas
  * @param {Nubmer} text 
  */
-function drawText(text, x, y) {
+function drawText(text, x, y, textSize) {
     ctx.font = '80px arial';
+    ctx.font = textSize + ' arial';
     ctx.fillText(text, x, y); //图片填充的文字
     ctx.strokeText(text, x, y); //描边文字
 }
+
+/**
+ * start random draw rgb
+ */
+function start() {
+    switch (status) {
+        case 'running':
+            alert('already running');
+            break;
+        case 'pause':
+            status = 'running';
+            NOOPBOT_FETCH({
+                API: 'hexbot',
+                count: '800'
+            }, settingColorArray);
+            alert('Successful startup');
+            break;
+        default:
+
+    }
+}
+
+/**
+ * stop random draw rgb
+ */
+function pause() {
+    switch (status) {
+        case 'running':
+            status = 'pause';
+            NOOPBOT_TICK_STOP(ticket);
+            alert('Successful pause');
+            break;
+        case 'pause':
+            alert('already pause');
+            break;
+        default:
+    }
+}
+
+// listen if browser changes size.
+window.onresize = function(event){
+    // stop task
+    NOOPBOT_TICK_STOP(ticket);
+    // resize
+    sizeCanvas();
+    // run app 
+    ticket = NOOPBOT_TICK_SETUP(draw, speed);
+    status = 'running';
+  };
