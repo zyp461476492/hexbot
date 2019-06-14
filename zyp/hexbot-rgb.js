@@ -19,6 +19,8 @@ let status = '';
 function start_app() {
     sizeCanvas();
 
+    drawText('Please wait', startX, startY);
+
     // default is running
     status = 'running';
 
@@ -262,6 +264,8 @@ window.onresize = function(event){
     NOOPBOT_TICK_STOP(ticket);
     // resize
     sizeCanvas();
+    // print tip info
+    drawText('Please wait', startX, startY);
     // run app 
     ticket = NOOPBOT_TICK_SETUP(draw, speed);
     status = 'running';
